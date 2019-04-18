@@ -134,6 +134,12 @@ def load_vocab(vocab_file):
   return vocab
 
 
+def write_vocab(vocab_dict, vocab_file):
+  """Write custom vocabulary to file"""
+  with tf.gfile.GFile(vocab_file, "w") as writer:
+    writer.write("\n".join(vocab_dict.keys()))
+
+
 def convert_by_vocab(vocab, items):
   """Converts a sequence of [tokens|ids] using the vocab."""
   output = []
@@ -162,16 +168,30 @@ def whitespace_tokenize(text):
 class JiebaTokenizer(object):
   """jieba token for chinese"""
   def __init__(self, vocab_file, custom_vocab_file=None):
+    if custom_vocab_file:
+      vocab_file=custom_vocab_file
+    self.custom_vocab = {}
     self.vocab = load_vocab(vocab_file)
     self.inv_vocab = {v: k for k, v in self.vocab.items()}
     self.basic_tokenizer = jieba.Tokenizer()
+
+    for token in self.vocab.keys():
+      if token.startswith("[unused"):
+        break
+      self.custom_vocab[token] = self.vocab[token]
+    # jieba添加自定义词
+    for token in self.custom_vocab.keys():
+      self.basic_tokenizer.add_word(token)
     self.wordpiece_tokenizer = WordpieceTokenizer(vocab=self.vocab)
 
   def tokenize(self, text):
     split_tokens = []
     for token, start, end in self.basic_tokenizer.tokenize(text):
-      for sub_token in self.wordpiece_tokenizer.tokenize(token):
-        split_tokens.append(sub_token)
+      if token not in self.vocab:
+        for sub_token in self.wordpiece_tokenizer.tokenize(token):
+          split_tokens.append(sub_token)
+      else:
+        split_tokens.append(token)
 
     return split_tokens
 
@@ -209,7 +229,7 @@ class FullTokenizer(object):
 class BasicTokenizer(object):
   """Runs basic tokenization (punctuation splitting, lower casing, etc.)."""
 
-  def __init__(self, use_jieba=True, do_lower_case=True):
+  def __init__(self, do_lower_case=True):
     """Constructs a BasicTokenizer.
 
     Args:

@@ -135,6 +135,8 @@ class TokenizationTest(tf.test.TestCase):
 
 if __name__ == "__main__":
   # tf.test.main()
-  vocab_file = "vocab.txt"
-  jieba_token = tokenization.JiebaTokenizer(vocab_file)
-  print(jieba_token.tokenize('bert怎么做中文nlp呢'))
+  vocab_file = "vocab/vocab.txt"
+  jieba_token = tokenization.JiebaTokenizer(vocab_file, "vocab/custom_vocab.txt")
+  test_cn = "bert怎么做中文nlp呢"
+  print(test_cn)
+  print(jieba_token.tokenize(test_cn))
